@@ -1,4 +1,5 @@
 import sys
+import os
 import comfy
 import torch
 import torchdiffeq
@@ -9,8 +10,9 @@ FIXED_SOLVERS = { "euler", "midpoint", "rk4", "heun3", "explicit_adams", "implic
 SOLVERS = [ *ADAPTIVE_SOLVERS, *FIXED_SOLVERS ]
 SOLVERS.sort()
 
+
 class ODEFunction:
-    def __init__(self, model, t_min, t_max, n_steps, is_adaptive, extra_args=None, callback=None):
+    def __init__(self, model, t_min, t_max, n_steps, is_adaptive, extra_args=None, callback=None, disable=None):
         self.model = model
         self.extra_args = {} if extra_args is None else extra_args
         self.callback = callback
@@ -28,7 +30,7 @@ class ODEFunction:
                 leave=False,
                 position=1,
                 file=sys.stdout,
-                disable=True
+                disable=disable if os.name == "nt" else True
             )
         else:
             self.pbar = tqdm(
@@ -37,7 +39,7 @@ class ODEFunction:
                 leave=False,
                 position=1,
                 file=sys.stdout,
-                disable=True
+                disable=disable if os.name == "nt" else True
             )
 
     def __call__(self, t, y):
@@ -104,10 +106,10 @@ class ODESampler:
             t = torch.stack([t_max, t_min])
             is_adaptive = True
 
-        ode = ODEFunction(model, t_min, t_max, n_steps, is_adaptive=is_adaptive, callback=callback, extra_args=extra_args)
+        ode = ODEFunction(model, t_min, t_max, n_steps, is_adaptive=is_adaptive, callback=callback, extra_args=extra_args, disable=disable)
 
         samples = torch.empty_like(x)
-        for i in trange(x.shape[0], desc=self.solver, disable=disable):
+        for i in trange(x.shape[0], desc=self.solver, disable=disable if os.name == "nt" else True, file=sys.stdout):
             ode.reset()
 
             samples[i] = torchdiffeq.odeint(
