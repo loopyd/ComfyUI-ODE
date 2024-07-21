@@ -1,3 +1,5 @@
+import dis
+import sys
 import comfy
 import torch
 import torchdiffeq
@@ -25,14 +27,18 @@ class ODEFunction:
                 desc="solve",
                 unit="%",
                 leave=False,
-                position=1
+                position=1,
+                file=sys.stdout,
+                disable=True
             )
         else:
             self.pbar = tqdm(
                 total=n_steps,
                 desc="solve",
                 leave=False,
-                position=1
+                position=1,
+                file=sys.stdout,
+                disable=True
             )
 
     def __call__(self, t, y):
